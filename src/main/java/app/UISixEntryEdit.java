@@ -8,12 +8,15 @@ import java.awt.event.ActionEvent;
 import java.io.*;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-//import java.io.ByteArrayInputStream; -> To be used for reloading a xml file
+import java.io.ByteArrayInputStream;
+import org.w3c.dom.Document;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
 
-public class UISixEntryEdit {
+public class UISixEntryEdit extends JFrame {
 
     //FUNCTION: stores the app UI parts and editor state.
-    private JFrame frame;
+
     private JTextField subjectField;
     private JTextPane entryPane;
     private JButton boldBtn;
@@ -24,35 +27,42 @@ public class UISixEntryEdit {
     private JButton indentBtn;
     private JButton hangingIndentBtn;
     private JButton saveButton;
+    private JButton discardButton;
     private boolean bulletMode = false;
     private boolean hangingMode = false;
+    private Runnable onReturn;
+    private String originalSubject;
 
     //FUNCTION: starts the whole editor setup.
 
-    public UISixEntryEdit() {
-
+    public UISixEntryEdit(String subject, Runnable onReturn) {
+        this.onReturn = onReturn;
+        this.originalSubject = subject;
         initializeFrame();
         initializeComponents();
         buildLayout();
         registerListeners();
         setupBulletEnterBehavior();
-
-        frame.setLocationRelativeTo(null);
-        frame.setVisible(true);
+        loadExistingEntry();
+        setLocationRelativeTo(null);
+        setVisible(true);
     }
+
+
 
     //FUNCTION: sets up the main app window and basic frame settings
     private void initializeFrame() {
 
-        frame = new JFrame("JEntries");
+        setTitle("JEntries");
 
-        frame.setSize(800, 700);
-        frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-        frame.setResizable(true);
+        setSize(800, 700);
+        setMinimumSize(new Dimension(800, 700));
+        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        setResizable(true);
 
         ImageIcon appIcon = loadIcon("JEntriesIcon.png");
 
-        if (appIcon != null) frame.setIconImage(appIcon.getImage());
+        if (appIcon != null) setIconImage(appIcon.getImage());
     }
 
     //FUNCTION: creates all buttons, text fields, and editor components
@@ -73,6 +83,7 @@ public class UISixEntryEdit {
         hangingIndentBtn = createIconButton("icon/JEntriesToolsIndentHangingLineIcon.png", "HI");
 
         saveButton = new JButton("SAVE");
+        discardButton = new JButton("DISCARD");
     }
 
     //FUNCTION: [LAYOUT] organizes the UI layout so everything looks clean and not cooked af
@@ -83,7 +94,6 @@ public class UISixEntryEdit {
         panel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
 
         //FUNCTION: [TOP PANEL] for entering the subject/title
-
         JPanel topPanel = new JPanel(new BorderLayout(10, 10));
         JLabel subjectLabel = new JLabel("SUBJECT:");
 
@@ -92,12 +102,10 @@ public class UISixEntryEdit {
         panel.add(topPanel, BorderLayout.NORTH);
 
         //FUNCTION: [CENTER PANEL] main typing area where the entry content goes
-
         JScrollPane scrollPane = new JScrollPane(entryPane);
         panel.add(scrollPane, BorderLayout.CENTER);
 
         //FUNCTION: [TOOLBAR] toolbar (below the entryPane) for text styling and formatting controls
-
         JToolBar toolBar = new JToolBar();
         toolBar.setFloatable(false);
 
@@ -109,8 +117,9 @@ public class UISixEntryEdit {
         toolBar.add(indentBtn);
         toolBar.add(hangingIndentBtn);
 
-        //FUNCTION: [SAVE BUTTON PANEL] panel that holds the save button
+        //FUNCTION: [SAVE & DISCARD BUTTONS PANEL] panel that holds the save & discard buttons
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        buttonPanel.add(discardButton);
         buttonPanel.add(saveButton);
 
         //FUNCTION: [BOTTOM] combines the toolbar and save section together
@@ -119,7 +128,7 @@ public class UISixEntryEdit {
         bottomContainer.add(toolBar, BorderLayout.NORTH);
         bottomContainer.add(buttonPanel, BorderLayout.SOUTH);
         panel.add(bottomContainer, BorderLayout.SOUTH);
-        frame.add(panel);
+        add(panel);
     }
 
     //FUNCTION: [BUTTON LISTENERS] connects buttons to actions, basically what makes the UI actually do shit
@@ -133,18 +142,26 @@ public class UISixEntryEdit {
         indentBtn.addActionListener(e -> addIndent());
         hangingIndentBtn.addActionListener(e -> toggleHangingIndent());
         saveButton.addActionListener(e -> confirmAndSave());
+        discardButton.addActionListener(e -> confirmDiscard());
     }
 
     //FUNCTION: asks the user before saving so no accidental saves happen
     private void confirmAndSave() {
-        int result = JOptionPane.showConfirmDialog(
-                frame,
-                "Are you sure you want to save your entry?",
-                "Confirm Save",
-                JOptionPane.YES_NO_OPTION,
-                JOptionPane.QUESTION_MESSAGE
-        );
+        int result = JOptionPane.showConfirmDialog(this, "Are you sure you want to save your entry?", "Confirm Save", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
         if (result == JOptionPane.YES_OPTION) saveEntry();
+
+    }
+    //FUNCTION: asks the user before discarding so no accidental discard happen
+    private void confirmDiscard() {
+
+        int result = JOptionPane.showConfirmDialog(this, "Are you sure you want to discard this entry?", "Confirm Discard", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
+
+        if (result == JOptionPane.YES_OPTION) {
+            subjectField.setText("");
+            entryPane.setText("");
+            dispose();
+            if (onReturn != null) {onReturn.run();}
+        }
     }
 
     //----- BULLET LIST -----
@@ -288,14 +305,43 @@ public class UISixEntryEdit {
         );
     }
 
-    //FUNCTION: saves the entry as XML with RTF formatting included. the save system goes hard here
+    //FUNCTION: saves the entry as XML with RTF formatting included. also some save system stuff
     public void saveEntry() {
 
         String subject = subjectField.getText().trim();
 
         if (subject.isEmpty()) {
-            JOptionPane.showMessageDialog(frame, "Subject cannot be empty!");
+            JOptionPane.showMessageDialog(this, "Subject cannot be empty!");
             return;
+        }
+
+        String createdTimestamp = null;
+
+        // check existing file first
+        File existingFile = new File("Documents/" + originalSubject + ".xml");
+
+        if (existingFile.exists()) {
+            try {
+                DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+                DocumentBuilder builder = factory.newDocumentBuilder();
+                Document doc = builder.parse(existingFile);
+
+                createdTimestamp = doc.getElementsByTagName("created")
+                        .item(0)
+                        .getTextContent();
+
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+
+        //FUNCTION: gets the current date and time for save tracking
+        LocalDateTime now = LocalDateTime.now();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MM-dd-yyyy (hh:mm a)");
+        String lastEdited = now.format(formatter);
+
+        if (createdTimestamp == null) {
+            createdTimestamp = lastEdited; // first-time save fallback
         }
 
         //File & Folder path names
@@ -304,56 +350,43 @@ public class UISixEntryEdit {
         String fileName = "Documents/" + subject + ".xml";
 
         try {
-            //FUNCTION: gets the current date and time for save tracking
-            LocalDateTime now = LocalDateTime.now();
-
-            DateTimeFormatter formatter =
-                    DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-            String timestamp = now.format(formatter);
-
             //FUNCTION: converts the styled document into RTF format text
-
             ByteArrayOutputStream out = new ByteArrayOutputStream();
             RTFEditorKit rtfKit = new RTFEditorKit();
 
-            rtfKit.write(
-                    out,
-                    entryPane.getDocument(),
-                    0,
-                    entryPane.getDocument().getLength()
-            );
+            rtfKit.write(out, entryPane.getDocument(), 0, entryPane.getDocument().getLength());
 
             String rtfContent = out.toString("UTF-8");
 
             //FUNCTION: writes all the entry data into the XML save file
-
-            BufferedWriter writer =
-                    new BufferedWriter(new FileWriter(fileName));
+            BufferedWriter writer = new BufferedWriter(new FileWriter(fileName));
 
             writer.write("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
             writer.write("<entry>\n");
             writer.write("    <subject>" + escapeXML(subject) + "</subject>\n");
-            writer.write("    <created>" + timestamp + "</created>\n");
-            writer.write("    <lastEdited>" + timestamp + "</lastEdited>\n");
+            writer.write("    <created>" + createdTimestamp  + "</created>\n");
+            writer.write("    <lastEdited>" + lastEdited  + "</lastEdited>\n");
             writer.write("    <content format=\"rtf\"><![CDATA[\n");
             writer.write(rtfContent);
             writer.write("\n]]></content>\n");
             writer.write("</entry>");
             writer.close();
 
-            JOptionPane.showMessageDialog(frame, "Entry Successfully Saved!");
+            JOptionPane.showMessageDialog(this, "Entry Successfully Saved!");
 
             subjectField.setText("");
             entryPane.setText("");
 
         } catch (Exception e) {
             e.printStackTrace();
-            JOptionPane.showMessageDialog(frame, "Error Saving File!");
+            JOptionPane.showMessageDialog(this, "Error Saving File!");
         }
+
+        dispose();
+        if (onReturn != null) {onReturn.run();}
     }
 
     //FUNCTION: prevents XML symbols from breaking the save file
-
     private String escapeXML(String text) {
 
         return text.replace("&", "&amp;")
@@ -382,15 +415,41 @@ public class UISixEntryEdit {
         return null;
     }
 
-    //FUNCTION: safely closes the editor window and clears the frame
-    public void dispose() {
-        if (frame != null) {
-            frame.dispose();
-            frame = null;
+    private void loadExistingEntry() {
+        File file = new File("Documents/" + originalSubject + ".xml");
+
+        if (!file.exists()) return;
+
+        try {
+            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+            DocumentBuilder builder = factory.newDocumentBuilder();
+            Document doc = builder.parse(file);
+
+            String subject = doc.getElementsByTagName("subject").item(0).getTextContent();
+            String content = doc.getElementsByTagName("content").item(0).getTextContent();
+
+            subjectField.setText(subject);
+
+            // IMPORTANT: reuse existing JTextPane (do NOT recreate it)
+            RTFEditorKit rtfKit = new RTFEditorKit();
+            entryPane.setEditorKit(rtfKit);
+
+            ByteArrayInputStream in =
+                    new ByteArrayInputStream(content.getBytes("UTF-8"));
+
+            entryPane.setDocument(entryPane.getStyledDocument()); // reset safely
+            rtfKit.read(in, entryPane.getDocument(), 0);
+
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 
-    public static void main(String[] args) {
-        SwingUtilities.invokeLater(UISixEntryEdit::new);
+    //FUNCTION: safely closes the editor window and clears the frame
+    @Override
+    public void dispose() {
+        super.dispose();
     }
+
+
 }
