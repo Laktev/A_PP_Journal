@@ -51,7 +51,15 @@ public class UIFourEntryListViewer extends JFrame {
 
 
         logoutButton = new JButton("LOG OUT");
-        logoutButton.addActionListener(e -> System.exit(0));
+        logoutButton.addActionListener(e -> {
+            dispose();
+
+            try {
+                UIOneUserLogin.main(new String[]{});
+            } catch (Exception ex) {
+                ex.printStackTrace();
+            }
+        });
 
         topPanel.add(helloLabel, BorderLayout.WEST);
         topPanel.add(logoutButton, BorderLayout.EAST);
@@ -195,7 +203,7 @@ public class UIFourEntryListViewer extends JFrame {
             }
 
             setVisible(false);
-            new app.UISixEntryEdit(selected.subject, () -> {
+            new UISixEntryEdit(selected.subject, UIOneUserLogin.currentUserFolderPath, () -> {
                 setVisible(true);
                 loadEntries();
             });
@@ -215,7 +223,7 @@ public class UIFourEntryListViewer extends JFrame {
                 return;
             }
 
-            File file = new File("Documents/" + selected.subject + ".xml");
+            File file = new File(UIOneUserLogin.currentUserFolderPath,selected.subject + ".xml");
             if (file.exists()) {
                 if (file.delete()) {
                     JOptionPane.showMessageDialog(this, "Entry deleted successfully!");
@@ -231,7 +239,7 @@ public class UIFourEntryListViewer extends JFrame {
 
         addButton.addActionListener(e -> {
             setVisible(false);
-            new app.UISixEntryEdit("", () -> {
+            new UISixEntryEdit("", UIOneUserLogin.currentUserFolderPath, () -> {
                 setVisible(true);
                 loadEntries();
             });
@@ -259,7 +267,7 @@ public class UIFourEntryListViewer extends JFrame {
         }
 
         setVisible(false);
-        new app.UIFiveEntryViewer(selected.subject, () -> {
+        new UIFiveEntryViewer(selected.subject, UIOneUserLogin.currentUserFolderPath, () -> {
             setVisible(true);
             loadEntries();
         });
@@ -268,7 +276,7 @@ public class UIFourEntryListViewer extends JFrame {
     private void loadEntries() {
 
         listModel.clear();
-        File folder = new File("./Documents");
+        File folder = new File(UIOneUserLogin.currentUserFolderPath);
         File[] files = folder.listFiles((dir, name) -> name.toLowerCase().endsWith(".xml"));
 
         if (files == null) {return;}

@@ -14,10 +14,12 @@ public class UIFiveEntryViewer extends JFrame {
     private JTextField subjectField;
     private JTextField timestampField;
     private Runnable onReturn;
+    private String userFolderPath;
 
-    public UIFiveEntryViewer(String entryFileName, Runnable onReturn) {
+    public UIFiveEntryViewer(String entryFileName, String userFolderPath, Runnable onReturn) {
 
         this.onReturn = onReturn;
+        this.userFolderPath = userFolderPath;
 
         initializeFrame();
         initializeComponents();
@@ -88,7 +90,7 @@ public class UIFiveEntryViewer extends JFrame {
 
         JButton exportPDFButton = new JButton("EXPORT TO PDF");
 
-        // FUNCTIONALITY LEFT BLANK
+        //FILL IN THIS LATER DIPSHIT
         exportPDFButton.addActionListener(e -> {
 
         });
@@ -117,7 +119,7 @@ public class UIFiveEntryViewer extends JFrame {
 
     private void loadEntry(String entryFileName) {
 
-        File file = new File("./Documents/" + entryFileName + ".xml");
+        File file = new File(userFolderPath,entryFileName + ".xml");
 
         try {
 

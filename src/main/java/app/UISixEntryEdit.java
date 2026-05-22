@@ -32,12 +32,13 @@ public class UISixEntryEdit extends JFrame {
     private boolean hangingMode = false;
     private Runnable onReturn;
     private String originalSubject;
+    private String userFolderPath;
 
     //FUNCTION: starts the whole editor setup.
-
-    public UISixEntryEdit(String subject, Runnable onReturn) {
+    public UISixEntryEdit(String subject, String userFolderPath, Runnable onReturn) {
         this.onReturn = onReturn;
         this.originalSubject = subject;
+        this.userFolderPath = userFolderPath;
         initializeFrame();
         initializeComponents();
         buildLayout();
@@ -318,7 +319,7 @@ public class UISixEntryEdit extends JFrame {
         String createdTimestamp = null;
 
         // check existing file first
-        File existingFile = new File("Documents/" + originalSubject + ".xml");
+        File existingFile = new File(userFolderPath, originalSubject + ".xml");
 
         if (existingFile.exists()) {
             try {
@@ -345,9 +346,9 @@ public class UISixEntryEdit extends JFrame {
         }
 
         //File & Folder path names
-        File dir = new File("Documents");
+        File dir = new File(userFolderPath);
         if (!dir.exists()) dir.mkdirs();
-        String fileName = "Documents/" + subject + ".xml";
+        String fileName = userFolderPath + File.separator + subject + ".xml";
 
         try {
             //FUNCTION: converts the styled document into RTF format text
@@ -406,17 +407,18 @@ public class UISixEntryEdit extends JFrame {
     //FUNCTION: loads image icons from the resources folder
     private ImageIcon loadIcon(String path) {
 
-        java.net.URL resource =
-                getClass().getClassLoader().getResource(path);
+        java.net.URL resource = getClass().getClassLoader().getResource(path);
 
-        if (resource != null) return new ImageIcon(resource);
+        if (resource != null) {
+            return new ImageIcon(resource);
+        }
+
         System.out.println("Icon not found: " + path);
-
         return null;
     }
 
     private void loadExistingEntry() {
-        File file = new File("Documents/" + originalSubject + ".xml");
+        File file = new File(userFolderPath,originalSubject + ".xml");
 
         if (!file.exists()) return;
 
