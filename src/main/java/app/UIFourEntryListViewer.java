@@ -24,8 +24,12 @@ public class UIFourEntryListViewer extends JFrame {
     private boolean sortByLastEdited = true;
     private boolean ascending = true;
     private int hoverIndex = -1;
+    private String username;
 
-    public UIFourEntryListViewer() {
+    public UIFourEntryListViewer(String username) {
+
+
+        this.username = username;
 
         ImageIcon appIcon = loadIcon("JEntriesIcon.png");
         if (appIcon != null) {setIconImage(appIcon.getImage());}
@@ -46,7 +50,7 @@ public class UIFourEntryListViewer extends JFrame {
 
         JPanel topPanel = new JPanel(new BorderLayout());
         topPanel.setBorder(new EmptyBorder(35, 40, 20, 40));
-        JLabel helloLabel = new JLabel("HELLO, USER!");
+        JLabel helloLabel = new JLabel("Hello, " + username + "!");
         helloLabel.setFont(helloLabel.getFont().deriveFont(25f));
 
 
@@ -136,7 +140,6 @@ public class UIFourEntryListViewer extends JFrame {
         headerPanel.add(sortBox, BorderLayout.EAST);
 
         listModel = new DefaultListModel<>();
-
         entryList = new JList<>(listModel);
 
         entryList.setCellRenderer(new EntryRenderer());
@@ -164,14 +167,11 @@ public class UIFourEntryListViewer extends JFrame {
             }
         });
 
-
         entryList.addMouseListener(new MouseAdapter() {
 
             @Override
             public void mouseClicked(MouseEvent e) {
-
                 if (e.getClickCount() == 2) {
-
                     openSelectedEntry();
                 }
             }
@@ -359,7 +359,6 @@ public class UIFourEntryListViewer extends JFrame {
         if (text == null) return "";
 
         if (text.length() <= maxLength) return text;
-
         String cut = text.substring(0, maxLength - 3);
 
         int lastSpace = cut.lastIndexOf(" ");
@@ -370,8 +369,7 @@ public class UIFourEntryListViewer extends JFrame {
         return cut + "...";
     }
 
-    private class EntryRenderer extends JPanel
-            implements ListCellRenderer<EntryData> {
+    private class EntryRenderer extends JPanel implements ListCellRenderer<EntryData> {
 
         private JLabel subjectLabel;
         private JLabel dateLabel;
@@ -429,7 +427,4 @@ public class UIFourEntryListViewer extends JFrame {
         return null;
     }
 
-    public static void main(String[] args) {
-        SwingUtilities.invokeLater(UIFourEntryListViewer::new);
-    }
 }

@@ -58,7 +58,6 @@ public class UIOneUserLogin extends JFrame {
     private void handleLogin() {
 
         try {
-
             String username = usernameField.getText().trim();
             String password = new String(passwordField.getPassword());
 
@@ -66,11 +65,10 @@ public class UIOneUserLogin extends JFrame {
             String folderPath = XMLUserStorage.verifyLogin(username, hashedPassword);
 
             if (folderPath != null) {
-
                 currentUserFolderPath = folderPath;
                 JOptionPane.showMessageDialog(this, "Login successful!");
                 dispose();
-                new UIFourEntryListViewer();
+                new UIFourEntryListViewer(username);
 
             } else {
                 JOptionPane.showMessageDialog(this, "Invalid username or password.");
@@ -84,7 +82,6 @@ public class UIOneUserLogin extends JFrame {
     private String encrypt(String input) throws NoSuchAlgorithmException {
 
         MessageDigest md = MessageDigest.getInstance("SHA-256");
-
         byte[] digest = md.digest(input.getBytes());
         BigInteger bigInt = new BigInteger(1, digest);
         return bigInt.toString(16);
