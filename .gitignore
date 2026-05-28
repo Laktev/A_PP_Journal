@@ -27,4 +27,11 @@ bin/
 
 ### Mac OS ###
 .DS_Store
-users.xml
+
+### APIs ###
+credentials.json
+**/credentials.json
+tokens/
+**/tokens/
+.idea/
+*.iml
