@@ -303,6 +303,26 @@ public class XMLUserStorage {
         return null;
     }
 
+    // Returns a list of every registered username from users.xml.
+    // Used by the share dialog in UIFiveEntryViewer so it doesn't rely on the local users/ folder.
+    public static java.util.List<String> getAllUsernames() {
+        java.util.List<String> names = new java.util.ArrayList<>();
+        try {
+            File file = new File(FILE_NAME);
+            if (!file.exists()) return names;
+            DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
+            DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
+            Document doc = dBuilder.parse(file);
+            NodeList userList = doc.getElementsByTagName("user");
+            for (int i = 0; i < userList.getLength(); i++) {
+                Element user = (Element) userList.item(i);
+                NodeList un = user.getElementsByTagName("username");
+                if (un.getLength() > 0) names.add(un.item(0).getTextContent().trim());
+            }
+        } catch (Exception e) { e.printStackTrace(); }
+        return names;
+    }
+
     // ── Private helpers ───────────────────────────────────────────────────────
     private static void setOrCreate(Document doc, Element parent, String tag, String value) {
         NodeList nodes = parent.getElementsByTagName(tag);

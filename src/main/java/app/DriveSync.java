@@ -131,6 +131,54 @@ public class DriveSync {
         }
     }
 
+    /* Function:
+    Shares an entry to another user by injecting/updating <sharedBy> in the XML and uploading
+    the result directly to the target user's Drive folder — no local folder needed on sender's machine.
+    Called from UIFiveEntryViewer.shareEntryToUser().
+    */
+    public static void shareEntry(String senderUsername, String targetUsername,
+                                  String entryFileName, String senderLocalFolder) {
+        runAsync(() -> {
+            java.io.File tempFile = null;
+            try {
+                Drive svc = getService();
+                ensureRootFolders(svc);
+
+                // Read the sender's local XML file
+                java.io.File source = new java.io.File(senderLocalFolder, entryFileName + ".xml");
+                if (!source.exists()) {
+                    System.err.println("[DriveSync] shareEntry: source file not found: " + source.getPath());
+                    return;
+                }
+                String xml = new String(java.nio.file.Files.readAllBytes(source.toPath()), "UTF-8");
+
+                // Inject or update the <sharedBy> tag
+                if (xml.contains("<sharedBy>")) {
+                    xml = xml.replaceAll("<sharedBy>.*?</sharedBy>",
+                            "<sharedBy>" + senderUsername + "</sharedBy>");
+                } else {
+                    xml = xml.replace("</entry>",
+                            "    <sharedBy>" + senderUsername + "</sharedBy>\n</entry>");
+                }
+
+                // Write the modified XML to a temp file so we can use FileContent to upload it
+                tempFile = java.io.File.createTempFile("jentries_share_", ".xml");
+                java.nio.file.Files.write(tempFile.toPath(), xml.getBytes("UTF-8"));
+
+                // Ensure the target user's Drive folder exists, then upload
+                String targetDriveFolder = ensureUserFolder(svc, targetUsername);
+                uploadOrUpdate(svc, targetDriveFolder, entryFileName + ".xml", tempFile, "application/xml");
+
+                System.out.println("[DriveSync] shareEntry: sent \"" + entryFileName
+                        + "\" to " + targetUsername);
+            } catch (Exception e) {
+                System.err.println("[DriveSync] shareEntry failed: " + e.getMessage());
+            } finally {
+                if (tempFile != null) tempFile.delete();
+            }
+        });
+    }
+
     // Updates the filename of an entry on GDrive when the subject changes on save.
     // Called from UISixEntryEdit.saveEntry() when it detects the subject was edited.
     public static void renameEntry(String username, String oldEntryName, String newEntryName) {

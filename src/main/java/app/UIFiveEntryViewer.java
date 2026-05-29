@@ -74,27 +74,12 @@ public class UIFiveEntryViewer extends JFrame {
     }
 
     /*FUNCTION:
-    shares entry to another user's folder by copying XML file and injecting/updating <sharedBy>.
-    replaces existing tag if already shared (para clean lang, no duplicates).
+    shares entry to another user by uploading the XML (with <sharedBy> tag) directly to
+    their Google Drive folder via DriveSync. No local folder needed on the sender's machine —
+    this works cross-computer because it goes through Drive, not the local filesystem.
     */
     private void shareEntryToUser(String targetUser) {
-        try {
-            File source      = new File(userFolderPath, entryFileName + ".xml");
-            File targetFolder = new File("users/" + targetUser);
-            String xml       = Files.readString(source.toPath());
-
-            if (xml.contains("<sharedBy>")) {
-                xml = xml.replaceAll("<sharedBy>.*?</sharedBy>", "<sharedBy>" + currentUsername + "</sharedBy>");
-            } else {
-                xml = xml.replace("</entry>", "<sharedBy>" + currentUsername + "</sharedBy>\n</entry>");
-            }
-
-            File destination = new File(targetFolder, entryFileName + ".xml");
-            Files.writeString(destination.toPath(), xml);
-
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        DriveSync.shareEntry(currentUsername, targetUser, entryFileName, userFolderPath);
     }
 
     /*FUNCTION:
@@ -130,15 +115,18 @@ public class UIFiveEntryViewer extends JFrame {
         JButton shareButton = new JButton("SEND TO OTHER USERS");
 
         /*FUNCTION:
-        share entry dialog — shows list of users and allows sending entry to selected account
-        or broadcasting to all users except current user.
+        share entry dialog — shows list of all registered users (from users.xml, not local disk)
+        and allows sending entry to a selected account or broadcasting to all users except current user.
+        Works cross-computer because the user list comes from Drive-synced users.xml.
         */
         shareButton.addActionListener(e -> {
+            // Refresh users.xml from Drive before reading so the list is always up to date
+            DriveSync.initAndPullUsersXml();
+
             JDialog dialog = new JDialog(this, "Share Entry", true);
             JPanel panel   = new JPanel();
             panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
 
-            File usersFolder   = new File("users");
             Dimension buttonSize = new Dimension(200, 35);
 
             JLabel titleLabel = new JLabel("Who do you want to send this to?");
@@ -146,13 +134,20 @@ public class UIFiveEntryViewer extends JFrame {
             titleLabel.setBorder(new EmptyBorder(10, 0, 10, 0));
             panel.add(titleLabel);
 
-            File[] users = usersFolder.listFiles(File::isDirectory);
+            // Pull user list from users.xml (Drive-synced) — not the local filesystem
+            java.util.List<String> allUsers = XMLUserStorage.getAllUsernames();
+            java.util.List<String> otherUsers = new java.util.ArrayList<>();
+            for (String name : allUsers) {
+                if (!name.equalsIgnoreCase(currentUsername)) otherUsers.add(name);
+            }
 
-            if (users != null) {
-                for (File user : users) {
-                    String userName = user.getName();
-                    if (userName.equals(currentUsername)) continue;
-
+            if (otherUsers.isEmpty()) {
+                JLabel noUsers = new JLabel("No other users found.");
+                noUsers.setAlignmentX(Component.CENTER_ALIGNMENT);
+                noUsers.setBorder(new EmptyBorder(6, 0, 6, 0));
+                panel.add(noUsers);
+            } else {
+                for (String userName : otherUsers) {
                     JButton userButton = new JButton(userName);
                     userButton.setMaximumSize(buttonSize);
                     userButton.setPreferredSize(buttonSize);
@@ -161,6 +156,8 @@ public class UIFiveEntryViewer extends JFrame {
 
                     userButton.addActionListener(x -> {
                         shareEntryToUser(userName);
+                        JOptionPane.showMessageDialog(dialog,
+                                "Entry sent to " + userName + ".\nThey will see it on next login.");
                         dialog.dispose();
                     });
 
@@ -168,29 +165,25 @@ public class UIFiveEntryViewer extends JFrame {
                     panel.add(Box.createVerticalStrut(6));
                 }
                 panel.add(Box.createVerticalStrut(10));
+
+                JButton allButton = new JButton("SHARE TO ALL");
+                allButton.setMaximumSize(buttonSize);
+                allButton.setPreferredSize(buttonSize);
+                allButton.setMinimumSize(buttonSize);
+                allButton.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+                allButton.addActionListener(x -> {
+                    for (String name : otherUsers) shareEntryToUser(name);
+                    JOptionPane.showMessageDialog(dialog,
+                            "Entry sent to all users.\nThey will see it on next login.");
+                    dialog.dispose();
+                });
+
+                panel.add(allButton);
             }
 
-            JButton allButton = new JButton("SHARE TO ALL");
-            allButton.setMaximumSize(buttonSize);
-            allButton.setPreferredSize(buttonSize);
-            allButton.setMinimumSize(buttonSize);
-            allButton.setAlignmentX(Component.CENTER_ALIGNMENT);
-
-            allButton.addActionListener(x -> {
-                if (users != null) {
-                    for (File user : users) {
-                        String name = user.getName();
-                        if (!name.equals(currentUsername)) {
-                            shareEntryToUser(name);
-                        }
-                    }
-                }
-                dialog.dispose();
-            });
-
-            panel.add(allButton);
             dialog.add(new JScrollPane(panel));
-            dialog.setSize(300, 200);
+            dialog.setSize(300, 220);
             dialog.setLocationRelativeTo(this);
             dialog.setVisible(true);
         });
