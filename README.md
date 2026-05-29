@@ -11,8 +11,9 @@ Submitted in fulfillment of the SUMMATIVE ASSESSMENT requirement for: **LICT 224
 - TIMA, Abegeil M.
 - VILLAFLOR, Emmanuel Jr. L.
 
-**Year Level:**  
+**Year Level:**
 2nd Year (A.Y. 2025–2026)
+
 ---
 
 ## Project Information
