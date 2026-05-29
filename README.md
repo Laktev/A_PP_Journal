@@ -1,6 +1,11 @@
 # jEntries
 Submitted in fulfillment of the SUMMATIVE ASSESSMENT requirement for: **LICT 224 | Programming Fundamentals**
 
+**View GitHub Repositories via this link**
+https://github.com/Laktev/A_PP_Journal
+
+(Release): https://github.com/Laktev/A_PP_Journal/releases/edit/V1.0
+
 ---
 
 ## Submitted By:
@@ -50,3 +55,16 @@ Core functionality includes a rich text editor with basic document styling, mult
 The scope of this project covers the development of a Java Swing desktop application that operates entirely offline for its core writing and management tasks. Multi-user login is implemented using SHA-256 password hashing to separate and secure individual profiles, with each user's entries stored in isolated local directories. The application supports document styling options, including bold, italics, underline, and strikethrough. Entries are automatically timestamped and sorted chronologically for easier navigation, and XML files are used for data persistence of both user account information and journal entries.
 
 The project also includes background synchronization with Google Drive to provide interoperability and backup without compromising the local-first design. The system is limited to desktop environments that support the Java Runtime Environment and does not include mobile or web versions. Formatting features such as numbered lists, indentation, text alignment, and undo/redo are currently under development and may have partial or inconsistent functionality in this release. Google Drive synchronization requires an active internet connection, and the application does not support real-time collaboration or shared entries, as it is designed exclusively for single-user private journaling.
+
+---
+
+### How to Run
+1. Download and extract `JEntries-v1.0.zip`
+2. Run `JEntries.exe` — no Java installation required, JRE is bundled
+3. Create an account on first launch and start journaling
+
+---
+
+### Requirements
+- Windows (64-bit)
+- Internet connection only required for Google Drive sync
