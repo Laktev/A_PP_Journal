@@ -8,5 +8,8 @@
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
+    <orderEntry type="library" name="google.api.client" level="project" />
+    <orderEntry type="library" name="google.oauth.client.jetty" level="project" />
+    <orderEntry type="library" name="google.apis.api.services.drive" level="project" />
   </component>
 </module>
