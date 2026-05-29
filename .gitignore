@@ -36,3 +36,7 @@ tokens/
 .idea/
 *.iml
 JRE/
+
+### Local user data ###
+users.xml
+users/
